@@ -1,8 +1,9 @@
 
-setwd("C:/Users/Emile Ndoumbe/Dropbox/emile1/docgarch")
-PATH="${RTOOLS40_HOME}\usr\bin;${PATH}"
-write('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', file = "~/.Renviron", append = TRUE)
-Sys.which("make")
+#================== Construction of DOC in mean (DOC-mean), DOC in volatility (DOC-vol) and non-linear predictors (DOC-GARCH(1,1)) as features for forecasting excess industry-level return ===================================================#
+#==================(After getting non-linear features, we will export them for forecasting in python files) ====================================================================================================================================#
+#================================================================================================================================================================================================================================================#
+
+
 
 library(inline)
 library(Rcpp)
@@ -13,6 +14,15 @@ library(rugarch)
 library(rmgarch)
 library(xts)
 library(scales)
+
+PATH="${RTOOLS40_HOME}\usr\bin;${PATH}"
+write('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', file = "~/.Renviron", append = TRUE)
+Sys.which("make")
+
+###### Set the current working directory
+
+
+setwd("C:/Users/Emile Ndoumbe/Dropbox/emile1/docgarch")
 
 
 ###### Functions for Doc in mean and Doc in volatility
@@ -65,6 +75,8 @@ library(scales)
   }
   W
 }
+
+###### DOC in mean function
 
 src1 <- '
 Rcpp::NumericVector theta_r(theta_s);  // creates Rcpp vector from SEXP
@@ -156,6 +168,8 @@ DOCinMean = cxxfunction(signature(theta_s="numeric", Z_s="matrix", L_s="integer"
                         includes = c("#include <stdio.h>")
 )
 
+
+###### DOC in volatility function
 
 src <- '
 Rcpp::NumericVector theta_r(theta_s);  // creates Rcpp vector from SEXP
@@ -262,6 +276,7 @@ DOCinVar = cxxfunction(signature(theta_s="numeric", Z_s="matrix", L_s="integer",
                        includes = c("#include <stdio.h>")
 )
 
+
 ###### Doc test function
 
 DOC.test = function(A, m){
@@ -291,12 +306,12 @@ DOC.test = function(A, m){
   round(out,3)
 }
 
-###### Import data files
+###### Import random forest selected data
 
 mydir="month"
 myfiles=list.files(path = mydir,pattern = "*.csv",full.names=TRUE)
 
-###### Estimation Doc in mean, Doc in volatility, garch(1,1) series and DOC tes
+###### Construction of Doc in mean series, Doc in volatility series and DOC-GARCH(1,1) series 
 
 V1=list()
 D1=list()
@@ -306,6 +321,7 @@ for (i in 1:63) {
   x=a[,-c(1,2)]
   x=as.matrix(x)
   x=scale(x)
+  
   # PCA "by hand"
   U.hat = matrix.sqrt.inv.pc(cov(x))
   Z.hat = x %*% t(U.hat)
@@ -316,32 +332,43 @@ for (i in 1:63) {
   L=1
   P=size[1]
   d=size[2]
+  
   # Weight matrix
   p = d*(d-1)/2 ; p2 = 2*p
   phi = 1 - (0:L)/(L+1) ; phi.total = sum(phi) ; phi = phi / phi.total
   PHI = c( rep(phi[1],p), rep(phi[-1],each = p2) ) 
+  
   # DOC in mean estimation
   
   out = nlminb(start = rep(0.66,p), objective = DOCinMean,  # Change this to DOCinMean as necessary
                gradient = NULL, hessian = NULL, scale = 1, control = list(iter.max = 1000, eval.max = 1000), 
                lower = -pi, upper = pi, Z_s = Z.hat, L_s = 1, PHI_s = PHI)
   theta.hat = out$par  
-  W.hat = (theta2W(out$par))  # Separating Matrix
+  
+  # Separating Matrix
+  
+  W.hat = (theta2W(out$par))
   S.hat = Z.hat %*% t(W.hat)
+  
   # Residual vector error
   e=Z.hat-S.hat
+  
   #Uncorrelated residual errors
   U = matrix.sqrt.inv.pc(cov(e))
   Z = e %*% t(U)
+  
   #Doc in volatility estimation
-  out = nlminb(start =rep(0.66,p), objective = DOCinVar,  # Change this to DOCinMean as necessary
+  out = nlminb(start =rep(0.66,p), objective = DOCinVar,  
                gradient = NULL, hessian = NULL, scale = 1, control = list(iter.max = 1000, eval.max = 1000), 
                lower = -pi, upper = pi, Z_s = Z, L_s = 1, PHI_s = PHI, C_s= 2.25)
-  theta = out$par  
-  W = (theta2W(out$par))  # Separating Matrix
+  theta = out$par
+  
+  # Separating Matrix
+  W = (theta2W(out$par))
   S = Z %*% t(W)
-  A=S^2
-  m=1
+  
+  #Construction of DOC-GARCH(1,1) series
+  
   B= matrix(NA,ncol =d, nrow = P)
   for (j in 1:d) {
     h=data.frame(S)
@@ -352,12 +379,14 @@ for (i in 1:63) {
     
     
   }
+  
+  
   E=data.frame(f,B)
   V1[[i]]=E
-  D1[[i]]=DOC.test(A,m)
+  
 }
-D1
-###### Export data
+
+###### Export DOC-GARCH(1,1) series
 
 a1=data.frame(V1[1])
 write.csv(a1,"C:/Users/Emile Ndoumbe/Dropbox/emile1/garch_month/file1.csv")
