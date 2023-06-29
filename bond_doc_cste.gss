@@ -1,0 +1,1249 @@
+new;
+cls;
+library optmum, pgraph;
+optset;
+
+@GLOBALS@
+sim_start=1;
+sim_end=3;
+incr=0.3; @increment for probability grid search@
+
+format /m1 /rd 9,5;
+
+/*V1=V1';
+V2=V2';
+S1=S1';
+S2=S2';*/
+
+@load data@
+
+load data[271,7]=bond_and_docmeansbon.txt;
+
+
+y1=data[1:271,2]/100;
+y2=data[1:271,3]/100;
+
+yy=y1~y2;
+
+
+S1=data[1:271,5];
+S2=data[1:271,6];
+
+
+t=rows(yy);
+n=2;
+
+@======================================================================@
+
+proc trans4(c0);
+     local c1;
+
+     c1=c0;
+c1[1]=c0[1];
+c1[2]=c0[2];
+c1[3]=c0[3];
+c1[4]=c0[4];
+c1[5]=exp(-c0[5]);
+c1[6]=exp(-c0[6]);
+c1[7]=exp(-c0[7]);
+c1[8]=exp(-c0[8]);
+
+c1[9]=(1+exp(-c0[9]))*c1[5];
+c1[10]=(1+exp(-c0[10]))*c1[6];
+c1[11]=(1+exp(-c0[11]))*c1[7];
+c1[12]=(1+exp(-c0[12]))*c1[8];
+c1[13]=c0[13];
+c1[14]=c0[14];
+c1[15]=c0[15];
+c1[16]=c0[16];
+c1[17]=c0[17];
+c1[18]=c0[18];
+c1[19]=c0[19];
+c1[20]=c0[20];
+
+c1[21:26]= exp(-c0[21:26])./(1+exp(-c0[21:26]));  
+
+
+
+retp(c1);
+endp;
+@======================================================================@
+@======================================================================@
+
+proc v_prob(EV, HE);      
+local val;
+
+val=(1/sqrt(((2*pi)^n)*det(HE)))*exp(-0.5*EV'*inv(HE)*EV);
+
+
+retp(val);
+endp;
+
+@======================================================================@
+@======================================================================@
+
+proc (8)=filter(prmtr1);
+local p_tl1,p_tl2,p_tl3,p_tl4,p_tl5,p_tl6,p_tl7,p_tl8,
+p_tt1,p_tt2,p_tt3,p_tt4,p_tt5,p_tt6,p_tt7,p_tt8,
+prmtr,sigma_1,sigma_2,sigma_1bar,
+sigma_2bar,sigma1c,sigma2c,sigma1cbar,sigma2cbar,d1,d2,d3,d4,
+d1bar,d2bar,d3bar,d4bar,cst1,cst2,cst1bar,cst2bar,
+p1_11,p1_22,p2_11,p2_22,p3_11,p3_22,
+p11,p12,p13,p14,p15,p16,p17,p18,
+p21,p22,p23,p24,p25,p26,p27,p28,
+p31,p32,p33,p34,p35,p36,p37,p38,
+p41,p42,p43,p44,p45,p46,p47,p48,
+p51,p52,p53,p54,p55,p56,p57,p58,
+p61,p62,p63,p64,p65,p66,p67,p68,
+p71,p72,p73,p74,p75,p76,p77,p78,
+p81,p82,p83,p84,p85,p86,p87,p88,pr_tr,
+sigmat_1,sigmat_2,sigmat_3,sigmat_4,sigmat_5,sigmat_6,sigmat_7,sigmat_8,
+A,EN,PROB__T,PR_L1,PR_L2,PR_L3,PR_L4,PR_L5,PR_L6,PR_L7,PR_L8,j_iter,
+PR_TL11,PR_TL12,PR_TL13,PR_TL14,PR_TL15,PR_TL16,PR_TL17,PR_TL18,
+PR_TL21,PR_TL22,PR_TL23,PR_TL24,PR_TL25,PR_TL26,PR_TL27,PR_TL28,
+PR_TL31,PR_TL32,PR_TL33,PR_TL34,PR_TL35,PR_TL36,PR_TL37,PR_TL38,
+PR_TL41,PR_TL42,PR_TL43,PR_TL44,PR_TL45,PR_TL46,PR_TL47,PR_TL48,
+PR_TL51,PR_TL52,PR_TL53,PR_TL54,PR_TL55,PR_TL56,PR_TL57,PR_TL58,
+PR_TL61,PR_TL62,PR_TL63,PR_TL64,PR_TL65,PR_TL66,PR_TL67,PR_TL68,
+PR_TL71,PR_TL72,PR_TL73,PR_TL74,PR_TL75,PR_TL76,PR_TL77,PR_TL78,
+PR_TL81,PR_TL82,PR_TL83,PR_TL84,PR_TL85,PR_TL86,PR_TL87,PR_TL88,
+e11,e12,e13,e14,e15,e16,e17,e18,
+e21,e22,e23,e24,e25,e26,e27,e28,
+e31,e32,e33,e34,e35,e36,e37,e38,
+e41,e42,e43,e44,e45,e46,e47,e48,
+e51,e52,e53,e54,e55,e56,e57,e58,
+e61,e62,e63,e64,e65,e66,e67,e68,
+e71,e72,e73,e74,e75,e76,e77,e78,
+e81,e82,e83,e84,e85,e86,e87,e88,
+fy11,fy12,fy13,fy14,fy15,fy16,fy17,fy18,
+fy21,fy22,fy23,fy24,fy25,fy26,fy27,fy28,
+fy31,fy32,fy33,fy34,fy35,fy36,fy37,fy38,
+fy41,fy42,fy43,fy44,fy45,fy46,fy47,fy48,
+fy51,fy52,fy53,fy54,fy55,fy56,fy57,fy58,
+fy61,fy62,fy63,fy64,fy65,fy66,fy67,fy68,
+fy71,fy72,fy73,fy74,fy75,fy76,fy77,fy78,
+fy81,fy82,fy83,fy84,fy85,fy86,fy87,fy88,fy;
+
+
+prmtr=trans4(prmtr1);
+
+@Normal Times Parameters@
+d1=prmtr[1];
+d2=prmtr[2];
+d3=prmtr[3];
+d4=prmtr[4];
+sigma_1=prmtr[5];
+sigma_2=prmtr[6];
+sigma1c=prmtr[7];
+sigma2c=prmtr[8];
+cst1=prmtr[17];
+cst2=prmtr[18];
+@S_1t parameters@
+
+sigma_1bar=prmtr[9];
+
+@S_2t parameters@
+
+sigma_2bar=prmtr[10];
+
+@S_ct=S_3t parameters@
+
+sigma1cbar=prmtr[11];
+sigma2cbar=prmtr[12];
+d1bar=prmtr[13];
+d2bar=prmtr[14];
+d3bar=prmtr[15];
+d4bar=prmtr[16];
+cst1bar=prmtr[19];
+cst2bar=prmtr[20];
+@Transition Probabilities@
+p1_11=prmtr[21];
+p1_22=prmtr[22];
+p2_11=prmtr[23];
+p2_22=prmtr[24];
+p3_11=prmtr[25];
+p3_22=prmtr[26];
+
+p11=p1_11*p2_11*p3_11;
+p12=p1_11*p2_11*(1-p3_11);
+p13=p1_11*(1-p2_11)*p3_11;
+p14=p1_11*(1-p2_11)*(1-p3_11);
+p15=(1-p1_11)*p2_11*p3_11;
+p16=(1-p1_11)*p2_11*(1-p3_11);
+p17=(1-p1_11)*(1-p2_11)*p3_11;
+p18=1-p11-p12-p13-p14-p15-p16-p17;
+
+p21=p1_11*p2_11*(1-p3_22);
+p22=p1_11*p2_11*p3_22;
+p23=p1_11*(1-p2_11)*(1-p3_22);
+p24=p1_11*(1-p2_11)*p3_22;
+p25=(1-p1_11)*p2_11*(1-p3_22);
+p26=(1-p1_11)*p2_11*p3_22;
+p27=(1-p1_11)*(1-p2_11)*(1-p3_22);
+p28=1-p21-p22-p23-p24-p25-p26-p27;
+
+p31=p1_11*(1-p2_22)*p3_11;
+p32=p1_11*(1-p2_22)*(1-p3_11);
+p33=p1_11*p2_22*p3_11;
+p34=p1_11*p2_22*(1-p3_11);
+p35=(1-p1_11)*(1-p2_22)*p3_11;
+p36=(1-p1_11)*(1-p2_22)*(1-p3_11);
+p37=(1-p1_11)*p2_22*p3_11;
+p38=1-p31-p32-p33-p34-p35-p36-p37;
+
+p41=p1_11*(1-p2_22)*(1-p3_22);
+p42=p1_11*(1-p2_22)*p3_22;
+p43=p1_11*p2_22*(1-p3_22);
+p44=p1_11*p2_22*p3_22;
+p45=(1-p1_11)*(1-p2_22)*(1-p3_22);
+p46=(1-p1_11)*(1-p2_22)*p3_22;
+p47=(1-p1_11)*p2_22*(1-p3_22);
+p48=1-p41-p42-p43-p44-p45-p46-p47;
+
+p51=(1-p1_22)*p2_11*p3_11;
+p52=(1-p1_22)*p2_11*(1-p3_11);
+p53=(1-p1_22)*(1-p2_11)*p3_11;
+p54=(1-p1_22)*(1-p2_11)*(1-p3_11);
+p55=p1_22*p2_11*p3_11;
+p56=p1_22*p2_11*(1-p3_11);
+p57=p1_22*(1-p2_11)*p3_11;
+p58=1-p51-p52-p53-p54-p55-p56-p57;
+
+p61=(1-p1_22)*p2_11*(1-p3_22);
+p62=(1-p1_22)*p2_11*p3_22;
+p63=(1-p1_22)*(1-p2_11)*(1-p3_22);
+p64=(1-p1_22)*(1-p2_11)*p3_22;
+p65=p1_22*p2_11*(1-p3_22);
+p66=p1_22*p2_11*p3_22;
+p67=p1_22*(1-p2_11)*(1-p3_22);
+p68=1-p61-p62-p63-p64-p65-p66-p67;
+
+p71=(1-p1_22)*(1-p2_22)*p3_11;
+p72=(1-p1_22)*(1-p2_22)*(1-p3_11);
+p73=(1-p1_22)*p2_22*p3_11;
+p74=(1-p1_22)*p2_22*(1-p3_11);
+p75=p1_22*(1-p2_22)*p3_11;
+p76=p1_22*(1-p2_22)*(1-p3_11);
+p77=p1_22*p2_22*p3_11;
+p78=1-p71-p72-p73-p74-p75-p76-p77;
+
+p81=(1-p1_22)*(1-p2_22)*(1-p3_22);
+p82=(1-p1_22)*(1-p2_22)*p3_22;
+p83=(1-p1_22)*p2_22*(1-p3_22);
+p84=(1-p1_22)*p2_22*p3_22;
+p85=p1_22*(1-p2_22)*(1-p3_22);
+p86=p1_22*(1-p2_22)*p3_22;
+p87=p1_22*p2_22*(1-p3_22);
+p88=1-p81-p82-p83-p84-p85-p86-p87;
+
+pr_tr=  p11~p12~p13~p14~p15~p16~p17~p18|
+        p21~p22~p23~p24~p25~p26~p27~p28|
+        p31~p32~p33~p34~p35~p36~p37~p38|
+        p41~p42~p43~p44~p45~p46~p47~p48|
+        p51~p52~p53~p54~p55~p56~p57~p58|
+        p61~p62~p63~p64~p65~p66~p67~p68|
+        p71~p72~p73~p74~p75~p76~p77~p78|
+        p81~p82~p83~p84~p85~p86~p87~p88;
+
+
+
+
+sigmat_1=   sigma1c^2+sigma_1^2~sigma1c*sigma2c|
+            sigma1c*sigma2c~sigma2c^2+sigma_2^2;
+sigmat_2=   sigma1cbar^2+sigma_1^2~sigma1cbar*sigma2cbar|
+            sigma1cbar*sigma2cbar~sigma2cbar^2+sigma_2^2;
+sigmat_3=   sigma1c^2+sigma_1^2~sigma1c*sigma2c|
+            sigma1c*sigma2c~sigma2c^2+sigma_2bar^2;
+sigmat_4=   sigma1cbar^2+sigma_1^2~sigma1cbar*sigma2cbar|
+            sigma1cbar*sigma2cbar~sigma2cbar^2+sigma_2bar^2;
+sigmat_5=   sigma1c^2+sigma_1bar^2~sigma1c*sigma2c|
+            sigma1c*sigma2c~sigma2c^2+sigma_2^2;
+sigmat_6=   sigma1cbar^2+sigma_1bar^2~sigma1cbar*sigma2cbar|
+            sigma1cbar*sigma2cbar~sigma2cbar^2+sigma_2^2;
+sigmat_7=   sigma1c^2+sigma_1bar^2~sigma1c*sigma2c|
+            sigma1c*sigma2c~sigma2c^2+sigma_2bar^2;
+sigmat_8=   sigma1cbar^2+sigma_1bar^2~sigma1cbar*sigma2cbar|
+            sigma1cbar*sigma2cbar~sigma2cbar^2+sigma_2bar^2;
+
+A = (eye(8)-pr_tr)|ones(1,8);
+EN=(0|0|0|0|0|0|0|0|1);
+PROB__T = inv(A'A)*A'EN;  @8x1 UNCONDITIONAL PROBABILITIES@
+PR_L1=PROB__T[1];
+PR_L2=PROB__T[2];
+PR_L3=PROB__T[3];
+PR_L4=PROB__T[4];
+PR_L5=PROB__T[5];
+PR_L6=PROB__T[6];
+PR_L7=PROB__T[7];
+PR_L8=PROB__T[8];
+
+@filter only@
+p_tl1={};
+p_tl2={};
+p_tl3={};
+p_tl4={};
+p_tl5={};
+p_tl6={};
+p_tl7={};
+p_tl8={};
+p_tt1={};
+p_tt2={};
+p_tt3={};
+p_tt4={};
+p_tt5={};
+p_tt6={};
+p_tt7={};
+p_tt8={};
+
+
+j_iter = 1;
+do until j_iter>t;
+
+PR_TL11=p11*PR_L1;
+PR_TL12=p12*PR_L1;
+PR_TL13=p13*PR_L1;
+PR_TL14=p14*PR_L1;
+PR_TL15=p15*PR_L1;
+PR_TL16=p16*PR_L1;
+PR_TL17=p17*PR_L1;
+PR_TL18=p18*PR_L1;
+
+PR_TL21=p21*PR_L2;
+PR_TL22=p22*PR_L2;
+PR_TL23=p23*PR_L2;
+PR_TL24=p24*PR_L2;
+PR_TL25=p25*PR_L2;
+PR_TL26=p26*PR_L2;
+PR_TL27=p27*PR_L2;
+PR_TL28=p28*PR_L2;
+
+PR_TL31=p31*PR_L3;
+PR_TL32=p32*PR_L3;
+PR_TL33=p33*PR_L3;
+PR_TL34=p34*PR_L3;
+PR_TL35=p35*PR_L3;
+PR_TL36=p36*PR_L3;
+PR_TL37=p37*PR_L3;
+PR_TL38=p38*PR_L3;
+
+PR_TL41=p41*PR_L4;
+PR_TL42=p42*PR_L4;
+PR_TL43=p43*PR_L4;
+PR_TL44=p44*PR_L4;
+PR_TL45=p45*PR_L4;
+PR_TL46=p46*PR_L4;
+PR_TL47=p47*PR_L4;
+PR_TL48=p48*PR_L4;
+
+PR_TL51=p51*PR_L5;
+PR_TL52=p52*PR_L5;
+PR_TL53=p53*PR_L5;
+PR_TL54=p54*PR_L5;
+PR_TL55=p55*PR_L5;
+PR_TL56=p56*PR_L5;
+PR_TL57=p57*PR_L5;
+PR_TL58=p58*PR_L5;
+
+PR_TL61=p61*PR_L6;
+PR_TL62=p62*PR_L6;
+PR_TL63=p63*PR_L6;
+PR_TL64=p64*PR_L6;
+PR_TL65=p65*PR_L6;
+PR_TL66=p66*PR_L6;
+PR_TL67=p67*PR_L6;
+PR_TL68=p68*PR_L6;
+
+PR_TL71=p71*PR_L7;
+PR_TL72=p72*PR_L7;
+PR_TL73=p73*PR_L7;
+PR_TL74=p74*PR_L7;
+PR_TL75=p75*PR_L7;
+PR_TL76=p76*PR_L7;
+PR_TL77=p77*PR_L7;
+PR_TL78=p78*PR_L7;
+
+PR_TL81=p81*PR_L8;
+PR_TL82=p82*PR_L8;
+PR_TL83=p83*PR_L8;
+PR_TL84=p84*PR_L8;
+PR_TL85=p85*PR_L8;
+PR_TL86=p86*PR_L8;
+PR_TL87=p87*PR_L8;
+PR_TL88=p88*PR_L8;
+
+@filter only@
+p_tl1=p_tl1|PR_TL11+PR_TL21+PR_TL31+PR_TL41+PR_TL51+PR_TL61+PR_TL71+PR_TL81;
+p_tl2=p_tl2|PR_TL12+PR_TL22+PR_TL32+PR_TL42+PR_TL52+PR_TL62+PR_TL72+PR_TL82;
+p_tl3=p_tl3|PR_TL13+PR_TL23+PR_TL33+PR_TL43+PR_TL53+PR_TL63+PR_TL73+PR_TL83;
+p_tl4=p_tl4|PR_TL14+PR_TL24+PR_TL34+PR_TL44+PR_TL54+PR_TL64+PR_TL74+PR_TL84;
+p_tl5=p_tl5|PR_TL15+PR_TL25+PR_TL35+PR_TL45+PR_TL55+PR_TL65+PR_TL75+PR_TL85;
+p_tl6=p_tl6|PR_TL16+PR_TL26+PR_TL36+PR_TL46+PR_TL56+PR_TL66+PR_TL76+PR_TL86;
+p_tl7=p_tl7|PR_TL17+PR_TL27+PR_TL37+PR_TL47+PR_TL57+PR_TL67+PR_TL77+PR_TL87;
+p_tl8=p_tl8|PR_TL18+PR_TL28+PR_TL38+PR_TL48+PR_TL58+PR_TL68+PR_TL78+PR_TL88;
+
+
+e11=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e12=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e13=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e14=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e15=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e16=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e17=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e18=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+
+e21=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e22=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e23=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e24=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e25=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e26=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e27=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e28=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+
+e31=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e32=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e33=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e34=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e35=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e36=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e37=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e38=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+
+e41=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e42=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e43=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e44=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e45=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e46=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e47=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e48=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+
+
+e51=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e52=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e53=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e54=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e55=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e56=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e57=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e58=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+
+e61=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e62=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e63=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e64=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e65=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e66=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e67=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e68=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+
+
+e71=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e72=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e73=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e74=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e75=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e76=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e77=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e78=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+
+e81=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e82=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e83=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e84=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e85=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e86=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e87=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e88=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+
+
+fy11=v_prob(e11,sigmat_1)*PR_TL11;
+fy12=v_prob(e12,sigmat_2)*PR_TL12;
+fy13=v_prob(e13,sigmat_3)*PR_TL13;
+fy14=v_prob(e14,sigmat_4)*PR_TL14;
+fy15=v_prob(e15,sigmat_5)*PR_TL15;
+fy16=v_prob(e16,sigmat_6)*PR_TL16;
+fy17=v_prob(e17,sigmat_7)*PR_TL17;
+fy18=v_prob(e18,sigmat_8)*PR_TL18;
+
+fy21=v_prob(e21,sigmat_1)*PR_TL21;
+fy22=v_prob(e22,sigmat_2)*PR_TL22;
+fy23=v_prob(e23,sigmat_3)*PR_TL23;
+fy24=v_prob(e24,sigmat_4)*PR_TL24;
+fy25=v_prob(e25,sigmat_5)*PR_TL25;
+fy26=v_prob(e26,sigmat_6)*PR_TL26;
+fy27=v_prob(e27,sigmat_7)*PR_TL27;
+fy28=v_prob(e28,sigmat_8)*PR_TL28;
+
+fy31=v_prob(e31,sigmat_1)*PR_TL31;
+fy32=v_prob(e32,sigmat_2)*PR_TL32;
+fy33=v_prob(e33,sigmat_3)*PR_TL33;
+fy34=v_prob(e34,sigmat_4)*PR_TL34;
+fy35=v_prob(e35,sigmat_5)*PR_TL35;
+fy36=v_prob(e36,sigmat_6)*PR_TL36;
+fy37=v_prob(e37,sigmat_7)*PR_TL37;
+fy38=v_prob(e38,sigmat_8)*PR_TL38;
+
+fy41=v_prob(e41,sigmat_1)*PR_TL41;
+fy42=v_prob(e42,sigmat_2)*PR_TL42;
+fy43=v_prob(e43,sigmat_3)*PR_TL43;
+fy44=v_prob(e44,sigmat_4)*PR_TL44;
+fy45=v_prob(e45,sigmat_5)*PR_TL45;
+fy46=v_prob(e46,sigmat_6)*PR_TL46;
+fy47=v_prob(e47,sigmat_7)*PR_TL47;
+fy48=v_prob(e48,sigmat_8)*PR_TL48;
+
+fy51=v_prob(e51,sigmat_1)*PR_TL51;
+fy52=v_prob(e52,sigmat_2)*PR_TL52;
+fy53=v_prob(e53,sigmat_3)*PR_TL53;
+fy54=v_prob(e54,sigmat_4)*PR_TL54;
+fy55=v_prob(e55,sigmat_5)*PR_TL55;
+fy56=v_prob(e56,sigmat_6)*PR_TL56;
+fy57=v_prob(e57,sigmat_7)*PR_TL57;
+fy58=v_prob(e58,sigmat_8)*PR_TL58;
+
+fy61=v_prob(e61,sigmat_1)*PR_TL61;
+fy62=v_prob(e62,sigmat_2)*PR_TL62;
+fy63=v_prob(e63,sigmat_3)*PR_TL63;
+fy64=v_prob(e64,sigmat_4)*PR_TL64;
+fy65=v_prob(e65,sigmat_5)*PR_TL65;
+fy66=v_prob(e66,sigmat_6)*PR_TL66;
+fy67=v_prob(e67,sigmat_7)*PR_TL67;
+fy68=v_prob(e68,sigmat_8)*PR_TL68;
+
+fy71=v_prob(e71,sigmat_1)*PR_TL71;
+fy72=v_prob(e72,sigmat_2)*PR_TL72;
+fy73=v_prob(e73,sigmat_3)*PR_TL73;
+fy74=v_prob(e74,sigmat_4)*PR_TL74;
+fy75=v_prob(e75,sigmat_5)*PR_TL75;
+fy76=v_prob(e76,sigmat_6)*PR_TL76;
+fy77=v_prob(e77,sigmat_7)*PR_TL77;
+fy78=v_prob(e78,sigmat_8)*PR_TL78;
+
+fy81=v_prob(e81,sigmat_1)*PR_TL81;
+fy82=v_prob(e82,sigmat_2)*PR_TL82;
+fy83=v_prob(e83,sigmat_3)*PR_TL83;
+fy84=v_prob(e84,sigmat_4)*PR_TL84;
+fy85=v_prob(e85,sigmat_5)*PR_TL85;
+fy86=v_prob(e86,sigmat_6)*PR_TL86;
+fy87=v_prob(e87,sigmat_7)*PR_TL87;
+fy88=v_prob(e88,sigmat_8)*PR_TL88;
+                                     
+
+fy=     fy11+fy12+fy13+fy14+fy15+fy16+fy17+fy18+
+        fy21+fy22+fy23+fy24+fy25+fy26+fy27+fy28+
+        fy31+fy32+fy33+fy34+fy35+fy36+fy37+fy38+
+        fy41+fy42+fy43+fy44+fy45+fy46+fy47+fy48+
+        fy51+fy52+fy53+fy54+fy55+fy56+fy57+fy58+
+        fy61+fy62+fy63+fy64+fy65+fy66+fy67+fy68+
+        fy71+fy72+fy73+fy74+fy75+fy76+fy77+fy78+
+        fy81+fy82+fy83+fy84+fy85+fy86+fy87+fy88;
+                                  
+
+PR_L1=(fy11+fy21+fy31+fy41+fy51+fy61+fy71+fy81)/fy;
+PR_L2=(fy12+fy22+fy32+fy42+fy52+fy62+fy72+fy82)/fy;
+PR_L3=(fy13+fy23+fy33+fy43+fy53+fy63+fy73+fy83)/fy;
+PR_L4=(fy14+fy24+fy34+fy44+fy54+fy64+fy74+fy84)/fy;
+PR_L5=(fy15+fy25+fy35+fy45+fy55+fy65+fy75+fy85)/fy;
+PR_L6=(fy16+fy26+fy36+fy46+fy56+fy66+fy76+fy86)/fy;
+PR_L7=(fy17+fy27+fy37+fy47+fy57+fy67+fy77+fy87)/fy;
+PR_L8=(fy18+fy28+fy38+fy48+fy58+fy68+fy78+fy88)/fy;
+
+@filter only@
+p_tt1=p_tt1|PR_L1;
+p_tt2=p_tt2|PR_L2;
+p_tt3=p_tt3|PR_L3;
+p_tt4=p_tt4|PR_L4;
+p_tt5=p_tt5|PR_L5;
+p_tt6=p_tt6|PR_L6;
+p_tt7=p_tt7|PR_L7;
+p_tt8=p_tt8|PR_L8;
+
+
+j_iter = j_iter+1;
+endo;
+
+
+retp(p_tt1,p_tt2,p_tt3,p_tt4,p_tt5,p_tt6,p_tt7,p_tt8);
+endp;
+
+
+@========================================================================@
+proc lik_fcn4(prmtr1);
+
+local likv,
+prmtr,sigma_1,sigma_2,sigma_1bar,
+sigma_2bar,sigma1c,sigma2c,sigma1cbar,sigma2cbar,d1,d2,d3,d4,
+d1bar,d2bar,d3bar,d4bar,cst1,cst2,cst1bar,cst2bar,
+p1_11,p1_22,p2_11,p2_22,p3_11,p3_22,
+p11,p12,p13,p14,p15,p16,p17,p18,
+p21,p22,p23,p24,p25,p26,p27,p28,
+p31,p32,p33,p34,p35,p36,p37,p38,
+p41,p42,p43,p44,p45,p46,p47,p48,
+p51,p52,p53,p54,p55,p56,p57,p58,
+p61,p62,p63,p64,p65,p66,p67,p68,
+p71,p72,p73,p74,p75,p76,p77,p78,
+p81,p82,p83,p84,p85,p86,p87,p88,pr_tr,
+sigmat_1,sigmat_2,sigmat_3,sigmat_4,sigmat_5,sigmat_6,sigmat_7,sigmat_8,
+A,EN,PROB__T,PR_L1,PR_L2,PR_L3,PR_L4,PR_L5,PR_L6,PR_L7,PR_L8,j_iter,
+PR_TL11,PR_TL12,PR_TL13,PR_TL14,PR_TL15,PR_TL16,PR_TL17,PR_TL18,
+PR_TL21,PR_TL22,PR_TL23,PR_TL24,PR_TL25,PR_TL26,PR_TL27,PR_TL28,
+PR_TL31,PR_TL32,PR_TL33,PR_TL34,PR_TL35,PR_TL36,PR_TL37,PR_TL38,
+PR_TL41,PR_TL42,PR_TL43,PR_TL44,PR_TL45,PR_TL46,PR_TL47,PR_TL48,
+PR_TL51,PR_TL52,PR_TL53,PR_TL54,PR_TL55,PR_TL56,PR_TL57,PR_TL58,
+PR_TL61,PR_TL62,PR_TL63,PR_TL64,PR_TL65,PR_TL66,PR_TL67,PR_TL68,
+PR_TL71,PR_TL72,PR_TL73,PR_TL74,PR_TL75,PR_TL76,PR_TL77,PR_TL78,
+PR_TL81,PR_TL82,PR_TL83,PR_TL84,PR_TL85,PR_TL86,PR_TL87,PR_TL88,
+e11,e12,e13,e14,e15,e16,e17,e18,
+e21,e22,e23,e24,e25,e26,e27,e28,
+e31,e32,e33,e34,e35,e36,e37,e38,
+e41,e42,e43,e44,e45,e46,e47,e48,
+e51,e52,e53,e54,e55,e56,e57,e58,
+e61,e62,e63,e64,e65,e66,e67,e68,
+e71,e72,e73,e74,e75,e76,e77,e78,
+e81,e82,e83,e84,e85,e86,e87,e88,
+fy11,fy12,fy13,fy14,fy15,fy16,fy17,fy18,
+fy21,fy22,fy23,fy24,fy25,fy26,fy27,fy28,
+fy31,fy32,fy33,fy34,fy35,fy36,fy37,fy38,
+fy41,fy42,fy43,fy44,fy45,fy46,fy47,fy48,
+fy51,fy52,fy53,fy54,fy55,fy56,fy57,fy58,
+fy61,fy62,fy63,fy64,fy65,fy66,fy67,fy68,
+fy71,fy72,fy73,fy74,fy75,fy76,fy77,fy78,
+fy81,fy82,fy83,fy84,fy85,fy86,fy87,fy88,fy;
+
+
+prmtr=trans4(prmtr1);
+
+@Normal Times Parameters@
+d1=prmtr[1];
+d2=prmtr[2];
+d3=prmtr[3];
+d4=prmtr[4];
+sigma_1=prmtr[5];
+sigma_2=prmtr[6];
+sigma1c=prmtr[7];
+sigma2c=prmtr[8];
+cst1=prmtr[17];
+cst2=prmtr[18];
+@S_1t parameters@
+
+sigma_1bar=prmtr[9];
+
+@S_2t parameters@
+
+sigma_2bar=prmtr[10];
+
+@S_ct=S_3t parameters@
+
+sigma1cbar=prmtr[11];
+sigma2cbar=prmtr[12];
+d1bar=prmtr[13];
+d2bar=prmtr[14];
+d3bar=prmtr[15];
+d4bar=prmtr[16];
+cst1bar=prmtr[19];
+cst2bar=prmtr[20];
+@Transition Probabilities@
+p1_11=prmtr[21];
+p1_22=prmtr[22];
+p2_11=prmtr[23];
+p2_22=prmtr[24];
+p3_11=prmtr[25];
+p3_22=prmtr[26];
+
+p11=p1_11*p2_11*p3_11;
+p12=p1_11*p2_11*(1-p3_11);
+p13=p1_11*(1-p2_11)*p3_11;
+p14=p1_11*(1-p2_11)*(1-p3_11);
+p15=(1-p1_11)*p2_11*p3_11;
+p16=(1-p1_11)*p2_11*(1-p3_11);
+p17=(1-p1_11)*(1-p2_11)*p3_11;
+p18=1-p11-p12-p13-p14-p15-p16-p17;
+
+p21=p1_11*p2_11*(1-p3_22);
+p22=p1_11*p2_11*p3_22;
+p23=p1_11*(1-p2_11)*(1-p3_22);
+p24=p1_11*(1-p2_11)*p3_22;
+p25=(1-p1_11)*p2_11*(1-p3_22);
+p26=(1-p1_11)*p2_11*p3_22;
+p27=(1-p1_11)*(1-p2_11)*(1-p3_22);
+p28=1-p21-p22-p23-p24-p25-p26-p27;
+
+p31=p1_11*(1-p2_22)*p3_11;
+p32=p1_11*(1-p2_22)*(1-p3_11);
+p33=p1_11*p2_22*p3_11;
+p34=p1_11*p2_22*(1-p3_11);
+p35=(1-p1_11)*(1-p2_22)*p3_11;
+p36=(1-p1_11)*(1-p2_22)*(1-p3_11);
+p37=(1-p1_11)*p2_22*p3_11;
+p38=1-p31-p32-p33-p34-p35-p36-p37;
+
+p41=p1_11*(1-p2_22)*(1-p3_22);
+p42=p1_11*(1-p2_22)*p3_22;
+p43=p1_11*p2_22*(1-p3_22);
+p44=p1_11*p2_22*p3_22;
+p45=(1-p1_11)*(1-p2_22)*(1-p3_22);
+p46=(1-p1_11)*(1-p2_22)*p3_22;
+p47=(1-p1_11)*p2_22*(1-p3_22);
+p48=1-p41-p42-p43-p44-p45-p46-p47;
+
+p51=(1-p1_22)*p2_11*p3_11;
+p52=(1-p1_22)*p2_11*(1-p3_11);
+p53=(1-p1_22)*(1-p2_11)*p3_11;
+p54=(1-p1_22)*(1-p2_11)*(1-p3_11);
+p55=p1_22*p2_11*p3_11;
+p56=p1_22*p2_11*(1-p3_11);
+p57=p1_22*(1-p2_11)*p3_11;
+p58=1-p51-p52-p53-p54-p55-p56-p57;
+
+p61=(1-p1_22)*p2_11*(1-p3_22);
+p62=(1-p1_22)*p2_11*p3_22;
+p63=(1-p1_22)*(1-p2_11)*(1-p3_22);
+p64=(1-p1_22)*(1-p2_11)*p3_22;
+p65=p1_22*p2_11*(1-p3_22);
+p66=p1_22*p2_11*p3_22;
+p67=p1_22*(1-p2_11)*(1-p3_22);
+p68=1-p61-p62-p63-p64-p65-p66-p67;
+
+p71=(1-p1_22)*(1-p2_22)*p3_11;
+p72=(1-p1_22)*(1-p2_22)*(1-p3_11);
+p73=(1-p1_22)*p2_22*p3_11;
+p74=(1-p1_22)*p2_22*(1-p3_11);
+p75=p1_22*(1-p2_22)*p3_11;
+p76=p1_22*(1-p2_22)*(1-p3_11);
+p77=p1_22*p2_22*p3_11;
+p78=1-p71-p72-p73-p74-p75-p76-p77;
+
+p81=(1-p1_22)*(1-p2_22)*(1-p3_22);
+p82=(1-p1_22)*(1-p2_22)*p3_22;
+p83=(1-p1_22)*p2_22*(1-p3_22);
+p84=(1-p1_22)*p2_22*p3_22;
+p85=p1_22*(1-p2_22)*(1-p3_22);
+p86=p1_22*(1-p2_22)*p3_22;
+p87=p1_22*p2_22*(1-p3_22);
+p88=1-p81-p82-p83-p84-p85-p86-p87;
+
+pr_tr=  p11~p12~p13~p14~p15~p16~p17~p18|
+        p21~p22~p23~p24~p25~p26~p27~p28|
+        p31~p32~p33~p34~p35~p36~p37~p38|
+        p41~p42~p43~p44~p45~p46~p47~p48|
+        p51~p52~p53~p54~p55~p56~p57~p58|
+        p61~p62~p63~p64~p65~p66~p67~p68|
+        p71~p72~p73~p74~p75~p76~p77~p78|
+        p81~p82~p83~p84~p85~p86~p87~p88;
+
+
+
+
+sigmat_1=   sigma1c^2+sigma_1^2~sigma1c*sigma2c|
+            sigma1c*sigma2c~sigma2c^2+sigma_2^2;
+sigmat_2=   sigma1cbar^2+sigma_1^2~sigma1cbar*sigma2cbar|
+            sigma1cbar*sigma2cbar~sigma2cbar^2+sigma_2^2;
+sigmat_3=   sigma1c^2+sigma_1^2~sigma1c*sigma2c|
+            sigma1c*sigma2c~sigma2c^2+sigma_2bar^2;
+sigmat_4=   sigma1cbar^2+sigma_1^2~sigma1cbar*sigma2cbar|
+            sigma1cbar*sigma2cbar~sigma2cbar^2+sigma_2bar^2;
+sigmat_5=   sigma1c^2+sigma_1bar^2~sigma1c*sigma2c|
+            sigma1c*sigma2c~sigma2c^2+sigma_2^2;
+sigmat_6=   sigma1cbar^2+sigma_1bar^2~sigma1cbar*sigma2cbar|
+            sigma1cbar*sigma2cbar~sigma2cbar^2+sigma_2^2;
+sigmat_7=   sigma1c^2+sigma_1bar^2~sigma1c*sigma2c|
+            sigma1c*sigma2c~sigma2c^2+sigma_2bar^2;
+sigmat_8=   sigma1cbar^2+sigma_1bar^2~sigma1cbar*sigma2cbar|
+            sigma1cbar*sigma2cbar~sigma2cbar^2+sigma_2bar^2;
+
+A = (eye(8)-pr_tr)|ones(1,8);
+EN=(0|0|0|0|0|0|0|0|1);
+PROB__T = inv(A'A)*A'EN;  @8x1 UNCONDITIONAL PROBABILITIES@
+PR_L1=PROB__T[1];
+PR_L2=PROB__T[2];
+PR_L3=PROB__T[3];
+PR_L4=PROB__T[4];
+PR_L5=PROB__T[5];
+PR_L6=PROB__T[6];
+PR_L7=PROB__T[7];
+PR_L8=PROB__T[8];
+
+likv=0;
+j_iter = 1;
+do until j_iter>t;
+
+PR_TL11=p11*PR_L1;
+PR_TL12=p12*PR_L1;
+PR_TL13=p13*PR_L1;
+PR_TL14=p14*PR_L1;
+PR_TL15=p15*PR_L1;
+PR_TL16=p16*PR_L1;
+PR_TL17=p17*PR_L1;
+PR_TL18=p18*PR_L1;
+
+PR_TL21=p21*PR_L2;
+PR_TL22=p22*PR_L2;
+PR_TL23=p23*PR_L2;
+PR_TL24=p24*PR_L2;
+PR_TL25=p25*PR_L2;
+PR_TL26=p26*PR_L2;
+PR_TL27=p27*PR_L2;
+PR_TL28=p28*PR_L2;
+
+PR_TL31=p31*PR_L3;
+PR_TL32=p32*PR_L3;
+PR_TL33=p33*PR_L3;
+PR_TL34=p34*PR_L3;
+PR_TL35=p35*PR_L3;
+PR_TL36=p36*PR_L3;
+PR_TL37=p37*PR_L3;
+PR_TL38=p38*PR_L3;
+
+PR_TL41=p41*PR_L4;
+PR_TL42=p42*PR_L4;
+PR_TL43=p43*PR_L4;
+PR_TL44=p44*PR_L4;
+PR_TL45=p45*PR_L4;
+PR_TL46=p46*PR_L4;
+PR_TL47=p47*PR_L4;
+PR_TL48=p48*PR_L4;
+
+PR_TL51=p51*PR_L5;
+PR_TL52=p52*PR_L5;
+PR_TL53=p53*PR_L5;
+PR_TL54=p54*PR_L5;
+PR_TL55=p55*PR_L5;
+PR_TL56=p56*PR_L5;
+PR_TL57=p57*PR_L5;
+PR_TL58=p58*PR_L5;
+
+PR_TL61=p61*PR_L6;
+PR_TL62=p62*PR_L6;
+PR_TL63=p63*PR_L6;
+PR_TL64=p64*PR_L6;
+PR_TL65=p65*PR_L6;
+PR_TL66=p66*PR_L6;
+PR_TL67=p67*PR_L6;
+PR_TL68=p68*PR_L6;
+
+PR_TL71=p71*PR_L7;
+PR_TL72=p72*PR_L7;
+PR_TL73=p73*PR_L7;
+PR_TL74=p74*PR_L7;
+PR_TL75=p75*PR_L7;
+PR_TL76=p76*PR_L7;
+PR_TL77=p77*PR_L7;
+PR_TL78=p78*PR_L7;
+
+PR_TL81=p81*PR_L8;
+PR_TL82=p82*PR_L8;
+PR_TL83=p83*PR_L8;
+PR_TL84=p84*PR_L8;
+PR_TL85=p85*PR_L8;
+PR_TL86=p86*PR_L8;
+PR_TL87=p87*PR_L8;
+PR_TL88=p88*PR_L8;
+
+
+
+e11=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e12=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e13=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e14=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e15=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e16=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e17=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e18=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+
+e21=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e22=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e23=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e24=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e25=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e26=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e27=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e28=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+
+e31=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e32=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e33=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e34=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e35=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e36=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e37=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e38=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+
+e41=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e42=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e43=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e44=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e45=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e46=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e47=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e48=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+
+
+e51=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e52=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e53=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e54=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e55=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e56=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e57=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e58=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+
+e61=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e62=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e63=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e64=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e65=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e66=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e67=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e68=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+
+
+e71=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e72=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e73=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e74=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e75=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e76=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e77=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e78=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+
+e81=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e82=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e83=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e84=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e85=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e86=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+e87=yy[j_iter,1:2]'-(cst1+d1*S1[j_iter]+d2*S2[j_iter]|cst2+d3*S1[j_iter]+d4*S2[j_iter]);
+e88=yy[j_iter,1:2]'-(cst1bar+d1bar*S1[j_iter]+d2bar*S2[j_iter]|cst2bar+d3bar*S1[j_iter]+d4bar*S2[j_iter]);
+
+
+fy11=v_prob(e11,sigmat_1)*PR_TL11;
+fy12=v_prob(e12,sigmat_2)*PR_TL12;
+fy13=v_prob(e13,sigmat_3)*PR_TL13;
+fy14=v_prob(e14,sigmat_4)*PR_TL14;
+fy15=v_prob(e15,sigmat_5)*PR_TL15;
+fy16=v_prob(e16,sigmat_6)*PR_TL16;
+fy17=v_prob(e17,sigmat_7)*PR_TL17;
+fy18=v_prob(e18,sigmat_8)*PR_TL18;
+
+fy21=v_prob(e21,sigmat_1)*PR_TL21;
+fy22=v_prob(e22,sigmat_2)*PR_TL22;
+fy23=v_prob(e23,sigmat_3)*PR_TL23;
+fy24=v_prob(e24,sigmat_4)*PR_TL24;
+fy25=v_prob(e25,sigmat_5)*PR_TL25;
+fy26=v_prob(e26,sigmat_6)*PR_TL26;
+fy27=v_prob(e27,sigmat_7)*PR_TL27;
+fy28=v_prob(e28,sigmat_8)*PR_TL28;
+
+fy31=v_prob(e31,sigmat_1)*PR_TL31;
+fy32=v_prob(e32,sigmat_2)*PR_TL32;
+fy33=v_prob(e33,sigmat_3)*PR_TL33;
+fy34=v_prob(e34,sigmat_4)*PR_TL34;
+fy35=v_prob(e35,sigmat_5)*PR_TL35;
+fy36=v_prob(e36,sigmat_6)*PR_TL36;
+fy37=v_prob(e37,sigmat_7)*PR_TL37;
+fy38=v_prob(e38,sigmat_8)*PR_TL38;
+
+fy41=v_prob(e41,sigmat_1)*PR_TL41;
+fy42=v_prob(e42,sigmat_2)*PR_TL42;
+fy43=v_prob(e43,sigmat_3)*PR_TL43;
+fy44=v_prob(e44,sigmat_4)*PR_TL44;
+fy45=v_prob(e45,sigmat_5)*PR_TL45;
+fy46=v_prob(e46,sigmat_6)*PR_TL46;
+fy47=v_prob(e47,sigmat_7)*PR_TL47;
+fy48=v_prob(e48,sigmat_8)*PR_TL48;
+
+fy51=v_prob(e51,sigmat_1)*PR_TL51;
+fy52=v_prob(e52,sigmat_2)*PR_TL52;
+fy53=v_prob(e53,sigmat_3)*PR_TL53;
+fy54=v_prob(e54,sigmat_4)*PR_TL54;
+fy55=v_prob(e55,sigmat_5)*PR_TL55;
+fy56=v_prob(e56,sigmat_6)*PR_TL56;
+fy57=v_prob(e57,sigmat_7)*PR_TL57;
+fy58=v_prob(e58,sigmat_8)*PR_TL58;
+
+fy61=v_prob(e61,sigmat_1)*PR_TL61;
+fy62=v_prob(e62,sigmat_2)*PR_TL62;
+fy63=v_prob(e63,sigmat_3)*PR_TL63;
+fy64=v_prob(e64,sigmat_4)*PR_TL64;
+fy65=v_prob(e65,sigmat_5)*PR_TL65;
+fy66=v_prob(e66,sigmat_6)*PR_TL66;
+fy67=v_prob(e67,sigmat_7)*PR_TL67;
+fy68=v_prob(e68,sigmat_8)*PR_TL68;
+
+fy71=v_prob(e71,sigmat_1)*PR_TL71;
+fy72=v_prob(e72,sigmat_2)*PR_TL72;
+fy73=v_prob(e73,sigmat_3)*PR_TL73;
+fy74=v_prob(e74,sigmat_4)*PR_TL74;
+fy75=v_prob(e75,sigmat_5)*PR_TL75;
+fy76=v_prob(e76,sigmat_6)*PR_TL76;
+fy77=v_prob(e77,sigmat_7)*PR_TL77;
+fy78=v_prob(e78,sigmat_8)*PR_TL78;
+
+fy81=v_prob(e81,sigmat_1)*PR_TL81;
+fy82=v_prob(e82,sigmat_2)*PR_TL82;
+fy83=v_prob(e83,sigmat_3)*PR_TL83;
+fy84=v_prob(e84,sigmat_4)*PR_TL84;
+fy85=v_prob(e85,sigmat_5)*PR_TL85;
+fy86=v_prob(e86,sigmat_6)*PR_TL86;
+fy87=v_prob(e87,sigmat_7)*PR_TL87;
+fy88=v_prob(e88,sigmat_8)*PR_TL88;
+                                     
+
+fy=     fy11+fy12+fy13+fy14+fy15+fy16+fy17+fy18+
+        fy21+fy22+fy23+fy24+fy25+fy26+fy27+fy28+
+        fy31+fy32+fy33+fy34+fy35+fy36+fy37+fy38+
+        fy41+fy42+fy43+fy44+fy45+fy46+fy47+fy48+
+        fy51+fy52+fy53+fy54+fy55+fy56+fy57+fy58+
+        fy61+fy62+fy63+fy64+fy65+fy66+fy67+fy68+
+        fy71+fy72+fy73+fy74+fy75+fy76+fy77+fy78+
+        fy81+fy82+fy83+fy84+fy85+fy86+fy87+fy88;
+		
+	likv=likv-ln(fy);
+		
+                                  
+
+PR_L1=(fy11+fy21+fy31+fy41+fy51+fy61+fy71+fy81)/fy;
+PR_L2=(fy12+fy22+fy32+fy42+fy52+fy62+fy72+fy82)/fy;
+PR_L3=(fy13+fy23+fy33+fy43+fy53+fy63+fy73+fy83)/fy;
+PR_L4=(fy14+fy24+fy34+fy44+fy54+fy64+fy74+fy84)/fy;
+PR_L5=(fy15+fy25+fy35+fy45+fy55+fy65+fy75+fy85)/fy;
+PR_L6=(fy16+fy26+fy36+fy46+fy56+fy66+fy76+fy86)/fy;
+PR_L7=(fy17+fy27+fy37+fy47+fy57+fy67+fy77+fy87)/fy;
+PR_L8=(fy18+fy28+fy38+fy48+fy58+fy68+fy78+fy88)/fy;
+
+j_iter = j_iter+1;
+endo;
+
+retp(likv);
+endp;
+
+
+@=====================================================================@
+
+@========================================================================@
+output file=arbz_msm.out reset;
+@========================================================================@
+output off;
+@***********************************@
+
+/*prmtr_in={ 0.01124   0.01125   0.01260   0.01492   0.06247   0.00426   0.04867 
+  0.03265   0.50965   0.98685   0.98687   0.07378   0.06457   0.06458 
+  0.06459   0.05647   0.01185   0.01159   0.61548   0.61367   0.91684 
+  0.91689   0.91968   0.91878   0.91795   0.91125 
+  };*/
+  
+
+/*prmtr_in={0.01124   0.01125   0.01260   0.01492   0.06247   0.00426   0.04867 
+  0.03265   0.50965   0.98685   0.98687   0.07378   0.06457   0.06458 
+  0.06459   0.05647   0.01185   0.01159   0.61548   0.61367   0.91684 
+  0.91689   0.91968   0.91878   0.91795   0.91125 
+  };*/
+
+/*prmtr_in={ 0.01124 0.01125 0.0126 0.01492 0.06247   0.06426 0.04867   0.03265 
+	0.50965   0.79685 0.78687 
+  0.07378 0.06457 0.06458 0.06459 0.05647 0.01185 0.01159 0.61548 0.61367
+  0.81684   0.91689   0.81968   0.90878   0.81795   0.90125
+  };*/
+  
+  
+/*prmtr_in={ -0.01124 0.01125 0.0126 0.01492 0.06247   0.11426 0.04867   0.03265 
+	0.50965   0.0785 0.98687 
+  0.07378 0.06457 0.06458 0.06459 0.05647 0.01185 0.01159 0.61548 0.61367
+  0.71684   0.71689   0.61968   0.61878   0.81795   0.71125
+  };*/
+  
+  
+/*prmtr_in={ 0.91124 0.81125 0.7126 0.61492 0.16247   1.11426 0.94867   0.83265 
+	0.90965   0.98685 0.98687 
+  0.07378 0.06457 0.06458 0.06459 0.05647 0.01185 0.01159 0.61548 0.61367
+  -0.09684   -0.11689   0.01968   -0.09878   -0.91795   0.91125
+  };*/
+
+/*prmtr_in={ 0.01124   0.01125   0.01260   0.01492   0.06247   0.00426   0.04867 
+  0.03265   0.50965   0.98685   0.98687   0.07378   0.06457   0.06458 
+  0.06459   0.05647   0.01185   0.01159   0.61548   0.61367   0.91684 
+  0.91689   0.91968   0.91878   0.91795   0.91125 };*/
+	
+ 
+
+/*prmtr_in={ 0.01124   0.01125   0.01260   0.01492   0.06247   -0.00426   0.04867 
+  0.01265   0.50965   0.98685   0.98687   0.02378   0.06457   0.06458 
+  0.06459   0.05647   0.01185   0.01159   0.61548   0.61367   0.91684 
+  0.91689   0.91968   0.91878   0.91795   0.91125 };*/
+  
+
+/*prmtr_in={ 0.01124   0.01125   0.01260   0.01492   0.06247   -0.00426   0.01867 
+  0.01265   0.30965   0.98685   0.98687   0.02378   0.06457   0.06458 
+  0.06459   0.05647   0.01185   0.01159   0.61548   0.61367   0.91684 
+  0.91689   0.91968   0.91878   0.91795   0.91125 };*/
+	
+	
+prmtr_in={    0.01124   0.01125   0.01260   0.00492   -0.00071  0.00061  -0.00072 
+  -0.00005   0.50965   0.98685   0.98687   0.02378   0.06457   0.06458 
+  0.06459   0.05647   0.01185   0.01159   0.61548   0.61367   0.91684 
+  0.91689   0.91968   0.91878   0.11795   0.11125 };
+
+/*
+prmtr_in={-0.00124   0.01125   0.01260   0.01492   0.06247  -0.00426   0.04867 
+  -0.00465   -0.00965   0.98685   0.98687   0.02378   0.06457   -0.06458 
+  0.06459   0.05647   0.01185   0.01159   0.61548   -0.61367   0.91684 
+  0.91689   0.91968   0.91878   0.91795   0.91125
+
+};*/
+
+prmtr_in= prmtr_in';
+
+{xout,fout,gout,cout}=optmum(&lik_fcn4,prmtr_in);
+xout;
+prm_fnl=trans4(xout);   @ Estimated  coefficients, constrained@
+output on;
+
+"==FINAL OUTPUT for main model (model 4)=======================";
+"initial values of prmtr is";
+         prmtr_in';
+"unconstrained estimates";
+        xout';
+"==============================================================";
+"likelihood value is ";; -fout;
+"sample size is ";;t;
+"cout";;cout;
+
+output off;
+ "Calculating Hessian..... Please be patient!!!!";
+                  hout=inv(hessp(&lik_fcn4,xout));
+            grdn_fnl=gradfd(&trans4,xout);
+                hsn_fnl=grdn_fnl*hout*grdn_fnl';
+                sd_fnl =sqrt(diag(hsn_fnl));
+                       @Standard errors of the estimated coefficients@  
+
+output on;
+prm_fnl';
+"(";;sd_fnl';;")";
+"";
+"***Standard errors are in parentheses";
+
+"===============================================================";
+output off;
+
+	
+{pr_tt1,pr_tt2,pr_tt3,pr_tt4,pr_tt5,pr_tt6,pr_tt7,pr_tt8}=filter(xout);
+
+prob1=pr_tt5+pr_tt6+pr_tt7+pr_tt8;
+prob2=pr_tt3+pr_tt4+pr_tt7+pr_tt8;
+prob3=pr_tt2+pr_tt4+pr_tt6+pr_tt8;
+
+@========================================================================@
+sd1=((1-prob1)*prm_fnl[5]+prob1*prm_fnl[9]+(1-prob3)*prm_fnl[7]+prob3*prm_fnl[11]);
+sd2=((1-prob2)*prm_fnl[6]+prob2*prm_fnl[10]+(1-prob3)*prm_fnl[8]+prob3*prm_fnl[12]);
+
+
+
+yy1=yy[.,1]-((1-prob3)*prm_fnl[1]+prob3*prm_fnl[13]).*S1-((1-prob3)*prm_fnl[2]+prob3*prm_fnl[14]).*S2-(1-prob3)*prm_fnl[17]-prob3*prm_fnl[19];
+yy2=yy[.,2]-((1-prob3)*prm_fnl[3]+prob3*prm_fnl[15]).*S1-((1-prob3)*prm_fnl[4]+prob3*prm_fnl[16]).*S2-(1-prob3)*prm_fnl[18]-prob3*prm_fnl[20];
+
+z1=yy1./sd1;
+z2=yy2./sd2;
+HH=10000000;
+KK=55555555;
+EE=22222222;
+FF=11111111;
+
+format /m1 /rd 8,4;
+
+@========================================================================@
+output file=arbz_msm.dta reset;
+@========================================================================@
+ 
+output on; q=prob1~prob2~prob3~z1~z2; 
+z1;
+HH;
+z2;
+KK;
+prob3;
+EE;
+yy1;
+FF;
+yy2;
+
+
+
+output off;
+@========================================================================@
+
+
+#IFUNIX
+
+let v = 100 100 640 480 0 0 1 6 0 0 0 2 2;
+wxy = WinOpenPQG(v,"XY Plot","XY");
+call WinSetActive(wxy);
+
+#ENDIF
+
+xlabel("week");
+title("Country 1 Exchange Rate Movements");
+
+xy(SEQA(1,1,ROWS(yy)),z1);
+
+#IFUNIX
+
+let v = 100 100 640 480 0 0 1 6 0 0 0 2 2;
+wxy = WinOpenPQG(v,"XY Plot","XY");
+call WinSetActive(wxy);
+
+#ENDIF
+
+xlabel("week");
+title("Country 2 Exchange Rate Movements");
+
+xy(SEQA(1,1,ROWS(yy)),z2);
+
+
+#IFUNIX
+
+let v = 100 100 640 480 0 0 1 6 0 0 0 2 2;
+wxy = WinOpenPQG(v,"XY Plot","XY");
+call WinSetActive(wxy);
+
+#ENDIF
+
+title("Pr(S_1t=1|Psi_T)");
+xy(seqa(1,1,rows(prob1)),prob1);
+
+#IFUNIX
+
+let v = 100 100 640 480 0 0 1 6 0 0 0 2 2;
+wxy = WinOpenPQG(v,"XY Plot","XY");
+call WinSetActive(wxy);
+
+#ENDIF
+
+title("Pr(S_2t=1|Psi_T)");
+xy(seqa(1,1,rows(prob2)),prob2);
+
+
+#IFUNIX
+
+let v = 100 100 640 480 0 0 1 6 0 0 0 2 2;
+wxy = WinOpenPQG(v,"XY Plot","XY");
+call WinSetActive(wxy);
+
+#ENDIF
+
+title("Pr(S_ct=1|Psi_T)");
+xy(seqa(1,1,rows(prob3)),prob3);
+
+
+
+#IFUNIX
+call WinSetActive(1);
+#ENDIF
+
+
+end;
+
+@ END OF MAIN PROGRAM @
+@========================================================================@
+
+
+
